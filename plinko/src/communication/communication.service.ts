@@ -1,62 +1,50 @@
 import { Injectable } from '@nestjs/common';
+import { NormalDistributionService } from '../calculation/normal-distribution.service';
+import { StandardDeviationConfigurationService } from '../configuration/std-dev-config.service';
 
 @Injectable()
 export class CommunicationService {
-    private multipliers: number[] = [0.5, 1.0, 1.1, 1.4, 3.0, 8.9];
-    private mean = this.multipliers[0];
-    private standardDeviation = 0.99;
-    private targetRTP = 98;
-    private numSimulations = 1000;
+  constructor(
+    private normalDistributionService: NormalDistributionService,
+    private stdDevConfigService: StandardDeviationConfigurationService,
+  ) {}
 
-    public generateBellCurveChoice(): number {
-        const probabilities = this.multipliers.map(value => this.normalDistribution(value, this.mean, this.standardDeviation));
-        const totalProbability = probabilities.reduce((acc, probability) => acc + probability, 0);
-        const randomValue = Math.random() * totalProbability;
+  private multipliers: number[] = [0.5, 1.0, 1.1, 1.4, 3.0, 8.9];
+  private mean = this.multipliers[0];
+  private targetRTP = 99;
+  private numSimulations = 100000;
+  private numCorrections = 1000;
 
-        let cumulativeProbability = 0;
-        for (let i = 0; i < this.multipliers.length; i++) {
-            cumulativeProbability += probabilities[i];
-            if (randomValue <= cumulativeProbability) {
-                return this.multipliers[i];
-            }
-        }
+  private standardDeviation =
+    this.stdDevConfigService.calculateStandardDeviationForRTP(
+      this.multipliers,
+      this.mean,
+      this.targetRTP,
+      this.numSimulations,
+      this.numCorrections,
+    );
 
-        return this.multipliers[this.multipliers.length - 1];
+  public processBet(betData: any, clientId: string): Promise<any> {
+    const isValidBet = this.validateBet(betData);
+    if (!isValidBet) {
+      return Promise.reject({ success: false, message: 'Invalid bet' });
     }
 
-    public processBet(betData: any, clientId: string): Promise<any> {
-        console.log(`Obrada opklade za klijenta ${clientId}`, betData);
-        const isValidBet = this.validateBet(betData);
-        if (!isValidBet) {
-            return Promise.reject({ success: false, message: 'Nevalidna opklada' });
-        }
+    const outcome = this.calculateBetOutcome(betData);
+    return Promise.resolve({ success: true, outcome });
+  }
 
-        const outcome = this.calculateBetOutcome(betData);
-        return Promise.resolve({ success: true, outcome });
-    }
+  private validateBet(betData: any): boolean {
+    return betData.amount > 0 && betData.amount <= 1000;
+  }
 
-    public processOtherMessage(messageData: any): Promise<any> {
-        console.log('Obrada druge vrste poruka', messageData);
-        const response = this.handleCustomMessage(messageData);
-        return Promise.resolve({ success: true, response });
-    }
-
-    private validateBet(betData: any): boolean {
-        return betData.amount > 0 && betData.amount <= 1000; // Primer validacije
-    }
-
-    private calculateBetOutcome(betData: any): any {
-        const multiplier = this.generateBellCurveChoice();
-        return { multiplier, winAmount: betData.amount * multiplier };
-    }
-
-    private handleCustomMessage(messageData: any): any {
-        return { message: 'Poruka obrađena', data: messageData };
-    }
-
-    private normalDistribution(x: number, mean: number, standardDeviation: number): number {
-        const coefficient = 1 / (standardDeviation * Math.sqrt(2 * Math.PI));
-        const exponent = -((x - mean) ** 2) / (2 * standardDeviation ** 2);
-        return coefficient * Math.exp(exponent);
-    }
+  private calculateBetOutcome(betData: any): any {
+    const multiplier = this.normalDistributionService.generateBellCurveChoice(
+      this.multipliers,
+      this.mean,
+      this.standardDeviation,
+    );
+    const winAmount = betData.amount * multiplier;
+    return { multiplier, winAmount };
+  }
 }

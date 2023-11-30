@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { CommunicationModule } from './communication/communication.module'; // Uvoz CommunicationModule
+import { CommunicationModule } from './communication/communication.module';
 
 @Module({
-  imports: [CommunicationModule], // Dodavanje CommunicationModule u imports niz
+  imports: [CommunicationModule],
   controllers: [AppController],
   providers: [AppService],
 })
