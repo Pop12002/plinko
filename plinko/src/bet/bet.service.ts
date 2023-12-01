@@ -1,21 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { NormalDistributionService } from '../calculation/normal-distribution.service';
-import { BetConfigService } from '../configuration/bet-config.service';
-import { BetConfig } from '../configuration/schemas/bet-config.schema';
-import { UpdateBetConfigDto } from '../configuration/dto/update-bet-config.dto';
+import { NormalDistributionService } from './calculation/normal-distribution.service';
+import { BetConfigService } from './configuration/bet-config.service';
+import { BetConfig } from './configuration/schemas/bet-config.schema';
+import { UpdateBetConfigDto } from './configuration/dto/update-bet-config.dto';
+import { BetRepository } from './repositories/bet.repository';
 
 @Injectable()
-export class CommunicationService {
+export class BetService {
   constructor(
     private normalDistributionService: NormalDistributionService,
     private betConfigService: BetConfigService,
+    private betRepository: BetRepository,
   ) {
     this.currentConfiguration = this.betConfigService.getConfiguration();
   }
 
   private currentConfiguration: BetConfig;
 
-  public processBet(betData: any) {
+  public processBet(userId: string, betData: any) {
     this.currentConfiguration = this.betConfigService.getConfiguration();
     const multiplier = this.normalDistributionService.generateBellCurveChoice(
       this.currentConfiguration.multipliers,
@@ -23,6 +25,13 @@ export class CommunicationService {
       this.currentConfiguration.standardDeviation,
     );
     const winAmount = betData.amount * multiplier;
+
+    this.betRepository.create({
+      userId: userId,
+      bet: betData.bet,
+      multiplier: multiplier,
+      winAmount: winAmount,
+    });
     return { multiplier, winAmount };
   }
 
