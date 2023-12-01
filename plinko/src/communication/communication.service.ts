@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { NormalDistributionService } from '../calculation/normal-distribution.service';
 import { BetConfigService } from '../configuration/bet-config.service';
-import { BetConfig } from '../configuration/model/bet-config.model';
+import { BetConfig } from '../configuration/schemas/bet-config.schema';
 import { UpdateBetConfigDto } from '../configuration/dto/update-bet-config.dto';
 
 @Injectable()
@@ -26,31 +26,20 @@ export class CommunicationService {
     return { multiplier, winAmount };
   }
 
-  public updateConfig(dto: UpdateBetConfigDto) {
+  public async updateConfig(dto: UpdateBetConfigDto) {
     dto.multipliers.sort();
     const mean = dto.multipliers[0];
     const numSimulations = 100000;
     const numCorrections = 1000;
     const standardDeviation =
-      this.betConfigService.calculateStandardDeviationForRTP(
+      await this.betConfigService.calculateStandardDeviationForRTP(
         dto.multipliers,
         mean,
         dto.targetRTP,
         numSimulations,
         numCorrections,
       );
-
-    const betConfig = new BetConfig(
-      dto.multipliers,
-      mean,
-      dto.targetRTP,
-      numSimulations,
-      numCorrections,
-      standardDeviation,
-    );
-
-    this.betConfigService.updateConfiguration(betConfig);
-
+    this.currentConfiguration = this.betConfigService.getConfiguration();
     return this.currentConfiguration;
   }
 }

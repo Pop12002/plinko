@@ -1,63 +1,42 @@
 import { Injectable } from '@nestjs/common';
-import { BetConfig } from './model/bet-config.model';
+import { BetConfig } from './schemas/bet-config.schema';
 import { NormalDistributionService } from '../calculation/normal-distribution.service';
+import { BetConfigRepository } from './repositories/bet-config.repository';
 
 @Injectable()
 export class BetConfigService {
-  constructor(private normalDistributionService: NormalDistributionService) {
-    const multipliers = [0.5, 1.0, 1.1, 1.4, 3.0, 8.9];
-    const mean = multipliers[0];
-    const targetRTP = 99;
-    const numSimulations = 100000;
-    const numCorrections = 1000;
-    const standardDeviation = this.calculateStandardDeviationForRTP(
-      multipliers,
-      mean,
-      targetRTP,
-      numSimulations,
-      numCorrections,
-    );
-
-    this.currentConfiguration = new BetConfig(
-      multipliers,
-      mean,
-      targetRTP,
-      numSimulations,
-      numCorrections,
-      standardDeviation,
-    );
+  constructor(
+    private normalDistributionService: NormalDistributionService,
+    private betConfigRepository: BetConfigRepository,
+  ) {
+    this.currentConfiguration = new BetConfig();
+    this.currentConfiguration.multipliers = [0.5, 1.0, 1.1, 1.4, 3.0, 8.9];
+    this.currentConfiguration.mean = this.currentConfiguration.multipliers[0];
+    this.currentConfiguration.targetRTP = 99;
+    this.currentConfiguration.numSimulations = 100000;
+    this.currentConfiguration.numCorrections = 1000;
+    this.currentConfiguration.standardDeviation = 1.03;
   }
-  betConfigCache: BetConfig[] = [];
+
   private currentConfiguration: BetConfig;
 
-  betConfigFromCache(betConfig: BetConfig): BetConfig | undefined {
-    for (const element of this.betConfigCache) {
-      if (betConfig.isSame(element)) {
-        return element;
-      }
-    }
-    return undefined;
-  }
-
-  calculateStandardDeviationForRTP(
+  async calculateStandardDeviationForRTP(
     multipliers: number[],
     mean: number,
     targetRTP: number,
     numSimulations: number,
     numCorrections: number,
-  ): number {
-    const betConfig = new BetConfig(
-      multipliers,
-      mean,
-      targetRTP,
-      numSimulations,
-      numCorrections,
-      0,
-    );
-
-    const betConfigCache = this.betConfigFromCache(betConfig);
+  ): Promise<number> {
+    const betConfigCache = await this.betConfigRepository.findOne({
+      multipliers: multipliers,
+      mean: mean,
+      targetRTP: targetRTP,
+      numSimulations: numSimulations,
+      numCorrections: numCorrections,
+    });
 
     if (betConfigCache) {
+      this.currentConfiguration = betConfigCache;
       return betConfigCache.standardDeviation;
     }
 
@@ -87,8 +66,18 @@ export class BetConfigService {
       numCorrectionsCurrent++;
     }
 
-    betConfig.addStandardDeviation(standardDeviation);
-    this.betConfigCache.push(betConfig);
+    standardDeviation = standardDeviation;
+
+    const betConfig = await this.betConfigRepository.create({
+      multipliers: multipliers,
+      mean: mean,
+      targetRTP: targetRTP,
+      numSimulations: numSimulations,
+      numCorrections: numCorrections,
+      standardDeviation: standardDeviation,
+    });
+
+    this.currentConfiguration = betConfig;
 
     return standardDeviation;
   }
@@ -111,7 +100,7 @@ export class BetConfigService {
     }
 
     const averageMultiplier = totalMultiplier / numSimulations;
-    const rtp = 100 + (averageMultiplier - 1) * 100; // RTP is expressed as a percentage
+    const rtp = 100 + (averageMultiplier - 1) * 100;
 
     return rtp;
   }

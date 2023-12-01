@@ -2,10 +2,13 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CommunicationModule } from './communication/communication.module';
-import { BetConfigModule } from './configuration/bet-config.module';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
-  imports: [CommunicationModule, BetConfigModule],
+  imports: [
+    CommunicationModule,
+    MongooseModule.forRoot('mongodb://localhost/plinkoDb'),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

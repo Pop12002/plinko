@@ -6,6 +6,7 @@ import { CreateBetDto } from './dto/create-bet.dto';
 @Controller('communication')
 export class CommunicationController {
   constructor(private communicationService: CommunicationService) {}
+
   @Post('process-bet')
   processBet(@Body() createBetDto: CreateBetDto) {
     return this.communicationService.processBet(createBetDto);
