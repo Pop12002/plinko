@@ -33,4 +33,19 @@ export class CommunicationGateway {
       client.emit('error', { message: error.message });
     }
   }
+
+  @SubscribeMessage('changeConfig')
+  async handleChangeConfig(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const jsonData = JSON.parse(data);
+
+      await this.communicationService.updateConfig(jsonData);
+      client.emit('changeConfig', 'Changing config succesful');
+    } catch (error) {
+      client.emit('changeConfig', error);
+    }
+  }
 }

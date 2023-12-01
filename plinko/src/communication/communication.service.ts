@@ -1,28 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { NormalDistributionService } from '../calculation/normal-distribution.service';
 import { StandardDeviationConfigurationService } from '../configuration/std-dev-config.service';
+import { StandardDeviationConfiguration } from '../configuration/std-dev-config.model';
+import { UpdateStandardDeviationConfiguration } from '../configuration/dto/update-std-dev-config.dto';
 
 @Injectable()
 export class CommunicationService {
   constructor(
     private normalDistributionService: NormalDistributionService,
     private stdDevConfigService: StandardDeviationConfigurationService,
-  ) {}
+  ) {
+    this.currentConfiguration = this.stdDevConfigService.getConfiguration();
+  }
 
-  private multipliers: number[] = [0.5, 1.0, 1.1, 1.4, 3.0, 8.9];
-  private mean = this.multipliers[0];
-  private targetRTP = 99;
-  private numSimulations = 100000;
-  private numCorrections = 1000;
-
-  private standardDeviation =
-    this.stdDevConfigService.calculateStandardDeviationForRTP(
-      this.multipliers,
-      this.mean,
-      this.targetRTP,
-      this.numSimulations,
-      this.numCorrections,
-    );
+  private currentConfiguration: StandardDeviationConfiguration;
 
   public processBet(betData: any, clientId: string): Promise<any> {
     const isValidBet = this.validateBet(betData);
@@ -34,15 +25,44 @@ export class CommunicationService {
     return Promise.resolve({ success: true, outcome });
   }
 
+  public updateConfig(dto: UpdateStandardDeviationConfiguration) {
+    dto.multipliers.sort();
+    const mean = dto.multipliers[0];
+    const numSimulations = 100000;
+    const numCorrections = 1000;
+    const standardDeviation =
+      this.stdDevConfigService.calculateStandardDeviationForRTP(
+        dto.multipliers,
+        mean,
+        dto.targetRTP,
+        numSimulations,
+        numCorrections,
+      );
+
+    const standardDeviationConfiguration = new StandardDeviationConfiguration(
+      dto.multipliers,
+      mean,
+      dto.targetRTP,
+      numSimulations,
+      numCorrections,
+      standardDeviation,
+    );
+
+    this.stdDevConfigService.updateConfiguration(
+      standardDeviationConfiguration,
+    );
+  }
+
   private validateBet(betData: any): boolean {
     return betData.amount > 0 && betData.amount <= 1000;
   }
 
   private calculateBetOutcome(betData: any): any {
+    this.currentConfiguration = this.stdDevConfigService.getConfiguration();
     const multiplier = this.normalDistributionService.generateBellCurveChoice(
-      this.multipliers,
-      this.mean,
-      this.standardDeviation,
+      this.currentConfiguration.multipliers,
+      this.currentConfiguration.mean,
+      this.currentConfiguration.standardDeviation,
     );
     const winAmount = betData.amount * multiplier;
     return { multiplier, winAmount };
