@@ -1,10 +1,18 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
+import { UpdateBetConfigDto } from '../configuration/dto/update-bet-config.dto';
+import { CommunicationService } from './communication.service';
+import { CreateBetDto } from './dto/create-bet.dto';
 
-@Controller()
+@Controller('communication')
 export class CommunicationController {
-  @Get('process-bet')
-  processBet() {}
+  constructor(private communicationService: CommunicationService) {}
+  @Post('process-bet')
+  processBet(@Body() createBetDto: CreateBetDto) {
+    return this.communicationService.processBet(createBetDto);
+  }
 
   @Post('change-bet-config')
-  updateBetConfig() {}
+  updateBetConfig(@Body() updateBetConfigDto: UpdateBetConfigDto) {
+    return this.communicationService.updateConfig(updateBetConfigDto);
+  }
 }

@@ -15,14 +15,15 @@ export class CommunicationService {
 
   private currentConfiguration: BetConfig;
 
-  public processBet(betData: any, clientId: string): Promise<any> {
-    const isValidBet = this.validateBet(betData);
-    if (!isValidBet) {
-      return Promise.reject({ success: false, message: 'Invalid bet' });
-    }
-
-    const outcome = this.calculateBetOutcome(betData);
-    return Promise.resolve({ success: true, outcome });
+  public processBet(betData: any) {
+    this.currentConfiguration = this.betConfigService.getConfiguration();
+    const multiplier = this.normalDistributionService.generateBellCurveChoice(
+      this.currentConfiguration.multipliers,
+      this.currentConfiguration.mean,
+      this.currentConfiguration.standardDeviation,
+    );
+    const winAmount = betData.amount * multiplier;
+    return { multiplier, winAmount };
   }
 
   public updateConfig(dto: UpdateBetConfigDto) {
@@ -49,20 +50,7 @@ export class CommunicationService {
     );
 
     this.betConfigService.updateConfiguration(betConfig);
-  }
 
-  private validateBet(betData: any): boolean {
-    return betData.amount > 0 && betData.amount <= 1000;
-  }
-
-  private calculateBetOutcome(betData: any): any {
-    this.currentConfiguration = this.betConfigService.getConfiguration();
-    const multiplier = this.normalDistributionService.generateBellCurveChoice(
-      this.currentConfiguration.multipliers,
-      this.currentConfiguration.mean,
-      this.currentConfiguration.standardDeviation,
-    );
-    const winAmount = betData.amount * multiplier;
-    return { multiplier, winAmount };
+    return this.currentConfiguration;
   }
 }
