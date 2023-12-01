@@ -1,6 +1,6 @@
 import { IsNotEmpty } from 'class-validator';
 
-export class UpdateStandardDeviationConfiguration {
+export class UpdateBetConfigDto {
   @IsNotEmpty()
   multipliers: number[];
 

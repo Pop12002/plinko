@@ -1,16 +1,18 @@
 import { Module } from '@nestjs/common';
 import { CommunicationService } from './communication.service';
 import { NormalDistributionService } from '../calculation/normal-distribution.service';
-import { StandardDeviationConfigurationService } from '../configuration/std-dev-config.service';
+import { BetConfigService } from '../configuration/bet-config.service';
 import { CommunicationGateway } from './communication.getawey';
-import { StandardDeviationConfigurationModule } from '../configuration/std-dev-config.module';
+import { BetConfigModule } from '../configuration/bet-config.module';
+import { CommunicationController } from './communication.controller';
 @Module({
-  imports: [StandardDeviationConfigurationModule],
+  controllers: [CommunicationController],
+  imports: [BetConfigModule],
   providers: [
     CommunicationGateway,
     CommunicationService,
     NormalDistributionService,
-    StandardDeviationConfigurationService,
+    BetConfigService,
   ],
   exports: [CommunicationService],
 })

@@ -1,4 +1,4 @@
-export class StandardDeviationConfiguration {
+export class BetConfig {
   multipliers: number[];
   mean: number;
   targetRTP: number;
@@ -22,29 +22,25 @@ export class StandardDeviationConfiguration {
     this.standardDeviation = standardDeviation;
   }
 
-  isSame(
-    standardDeviationConfiguration: StandardDeviationConfiguration,
-  ): boolean {
-    if (standardDeviationConfiguration.mean !== this.mean) {
+  isSame(betConfig: BetConfig): boolean {
+    if (betConfig.mean !== this.mean) {
       return false;
     }
 
-    if (standardDeviationConfiguration.targetRTP !== this.targetRTP) {
+    if (betConfig.targetRTP !== this.targetRTP) {
       return false;
     }
 
-    if (standardDeviationConfiguration.numSimulations !== this.numSimulations) {
+    if (betConfig.numSimulations !== this.numSimulations) {
       return false;
     }
 
-    if (standardDeviationConfiguration.numCorrections !== this.numCorrections) {
+    if (betConfig.numCorrections !== this.numCorrections) {
       return false;
     }
 
     for (let i = 0; i < this.multipliers.length; i++) {
-      if (
-        this.multipliers[i] !== standardDeviationConfiguration.multipliers[i]
-      ) {
+      if (this.multipliers[i] !== betConfig.multipliers[i]) {
         return false;
       }
     }

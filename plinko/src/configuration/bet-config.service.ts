@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { StandardDeviationConfiguration } from './std-dev-config.model';
+import { BetConfig } from './model/bet-config.model';
 import { NormalDistributionService } from '../calculation/normal-distribution.service';
 
 @Injectable()
-export class StandardDeviationConfigurationService {
+export class BetConfigService {
   constructor(private normalDistributionService: NormalDistributionService) {
     const multipliers = [0.5, 1.0, 1.1, 1.4, 3.0, 8.9];
     const mean = multipliers[0];
@@ -18,7 +18,7 @@ export class StandardDeviationConfigurationService {
       numCorrections,
     );
 
-    this.currentConfiguration = new StandardDeviationConfiguration(
+    this.currentConfiguration = new BetConfig(
       multipliers,
       mean,
       targetRTP,
@@ -27,14 +27,12 @@ export class StandardDeviationConfigurationService {
       standardDeviation,
     );
   }
-  standardDeviationConfigurationCache: StandardDeviationConfiguration[] = [];
-  private currentConfiguration: StandardDeviationConfiguration;
+  betConfigCache: BetConfig[] = [];
+  private currentConfiguration: BetConfig;
 
-  standardDeviationFromCache(
-    standardDeviationConfiguration: StandardDeviationConfiguration,
-  ): StandardDeviationConfiguration | undefined {
-    for (const element of this.standardDeviationConfigurationCache) {
-      if (standardDeviationConfiguration.isSame(element)) {
+  betConfigFromCache(betConfig: BetConfig): BetConfig | undefined {
+    for (const element of this.betConfigCache) {
+      if (betConfig.isSame(element)) {
         return element;
       }
     }
@@ -48,7 +46,7 @@ export class StandardDeviationConfigurationService {
     numSimulations: number,
     numCorrections: number,
   ): number {
-    const standardDeviationConfiguration = new StandardDeviationConfiguration(
+    const betConfig = new BetConfig(
       multipliers,
       mean,
       targetRTP,
@@ -57,12 +55,10 @@ export class StandardDeviationConfigurationService {
       0,
     );
 
-    const standardDeviationCache = this.standardDeviationFromCache(
-      standardDeviationConfiguration,
-    );
+    const betConfigCache = this.betConfigFromCache(betConfig);
 
-    if (standardDeviationCache) {
-      return standardDeviationCache.standardDeviation;
+    if (betConfigCache) {
+      return betConfigCache.standardDeviation;
     }
 
     let standardDeviation = 1;
@@ -91,10 +87,8 @@ export class StandardDeviationConfigurationService {
       numCorrectionsCurrent++;
     }
 
-    standardDeviationConfiguration.addStandardDeviation(standardDeviation);
-    this.standardDeviationConfigurationCache.push(
-      standardDeviationConfiguration,
-    );
+    betConfig.addStandardDeviation(standardDeviation);
+    this.betConfigCache.push(betConfig);
 
     return standardDeviation;
   }
@@ -126,9 +120,7 @@ export class StandardDeviationConfigurationService {
     return this.currentConfiguration;
   }
 
-  updateConfiguration(
-    standardDeviationConfiguration: StandardDeviationConfiguration,
-  ) {
-    this.currentConfiguration = standardDeviationConfiguration;
+  updateConfiguration(betConfig: BetConfig) {
+    this.currentConfiguration = betConfig;
   }
 }
