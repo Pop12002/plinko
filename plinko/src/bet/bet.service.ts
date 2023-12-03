@@ -48,7 +48,17 @@ export class BetService {
         numSimulations,
         numCorrections,
       );
+
     this.currentConfiguration = this.betConfigService.getConfiguration();
     return this.currentConfiguration;
+  }
+
+  getCurrentRtp() {
+    return this.betConfigService.calculateRTP(
+      this.currentConfiguration.multipliers,
+      this.currentConfiguration.mean,
+      this.currentConfiguration.standardDeviation,
+      this.currentConfiguration.numSimulations,
+    );
   }
 }
