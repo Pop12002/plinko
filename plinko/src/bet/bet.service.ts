@@ -28,7 +28,7 @@ export class BetService {
 
     this.betRepository.create({
       userId: userId,
-      bet: betData.bet,
+      amount: betData.bet,
       multiplier: multiplier,
       winAmount: winAmount,
     });

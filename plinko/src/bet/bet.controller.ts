@@ -1,21 +1,19 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Res } from '@nestjs/common';
 import { UpdateBetConfigDto } from './configuration/dto/update-bet-config.dto';
 import { BetService } from './bet.service';
 import { CreateBetDto } from './dto/create-bet.dto';
-import { JwtGuard } from '../auth/guard/jwt.guard';
-import { GetUser } from '../auth/decorator';
+import { AuthMiddlewareData } from '../auth/middleware/middleware.interfaces';
 
-@UseGuards(JwtGuard)
 @Controller('bet')
 export class BetController {
   constructor(private betService: BetService) {}
 
   @Post('process-bet')
   processBet(
-    @GetUser('id') userId: string,
     @Body() createBetDto: CreateBetDto,
+    @Res({ passthrough: true }) response: AuthMiddlewareData,
   ) {
-    return this.betService.processBet(userId, createBetDto);
+    return this.betService.processBet(response.locals.user.id, createBetDto);
   }
 
   @Post('change-bet-config')

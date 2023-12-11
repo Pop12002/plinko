@@ -1,70 +1,61 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { AuthDto } from './dto';
-import * as argon from 'argon2';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { UserRepository } from './repository/user.repository';
-import { User } from './schemas/user.schema';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { LoginUserDto } from './dtos/login-user.dto';
+import { RegisterUserDto } from './dtos/register-user.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { HashHelperService } from './hash-helper.service';
+import { UserRepository } from './repositories/user.repository';
+import { User } from './schemas/user.schema';
 
-@Injectable({})
+@Injectable()
 export class AuthService {
   constructor(
-    private jwt: JwtService,
-    private config: ConfigService,
     private userRepository: UserRepository,
+
+    private hashHelperService: HashHelperService,
   ) {}
 
-  async signup(dto: AuthDto) {
-    const user = new User();
-    user.id = uuidv4();
-    user.email = dto.email;
-    user.hash = await argon.hash(dto.password);
-
-    if (await this.userRepository.exists(user)) {
-      throw new ForbiddenException('Credentials taken');
-    }
-
-    const userDb = await this.userRepository.create({
-      id: user.id,
-      email: user.email,
-      hash: user.hash,
+  async login(data: LoginUserDto) {
+    let user = await this.userRepository.findOne({
+      username: data.username,
     });
 
-    return this.signToken(userDb.id, user.email);
-  }
-
-  async signin(dto: AuthDto) {
-    const user = await this.userRepository.findOne({ email: dto.email });
     if (!user) {
-      throw new ForbiddenException('Credentials incorrect');
+      throw new BadRequestException('The username does not exist');
     }
 
-    const passMatches = await argon.verify(user.hash, dto.password);
-    if (!passMatches) {
-      throw new ForbiddenException('Password incorrect');
-    }
-
-    return this.signToken(user.id, user.email);
-  }
-
-  async signToken(
-    userId: string,
-    email: string,
-  ): Promise<{ access_token: string }> {
-    const payload = {
-      sub: userId,
-      email,
-    };
-    const secret = this.config.get('JWT_SECRET');
-
-    const token = await this.jwt.signAsync(payload, {
-      expiresIn: '15m',
-      secret: secret,
+    user = await this.userRepository.findOne({
+      username: data.username,
+      password: this.hashHelperService.hashPassword(data.password),
     });
 
-    return {
-      access_token: token,
-    };
+    if (!user) {
+      throw new BadRequestException('Incorrect password');
+    }
+
+    const tokenData = await this.hashHelperService.hashAndStoreToken(user);
+
+    return { user, ...tokenData };
+  }
+
+  async register(data: RegisterUserDto) {
+    const user = await this.userRepository.findOne({
+      username: data.username,
+    });
+
+    if (user) {
+      throw new BadRequestException('Username already exists');
+    }
+
+    const newUser: User = await this.userRepository.create({
+      id: uuidv4(),
+      username: data.username,
+      password: this.hashHelperService.hashPassword(data.password),
+    });
+
+    const returnUser = { id: newUser.id, username: newUser.username };
+
+    const tokenData = await this.hashHelperService.hashAndStoreToken(newUser);
+
+    return { returnUser, ...tokenData };
   }
 }

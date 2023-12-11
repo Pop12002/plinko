@@ -28,11 +28,11 @@ export class BetConfigService {
     numCorrections: number,
   ): Promise<number> {
     const betConfigCache = await this.betConfigRepository.findOne({
-      multipliers: multipliers,
-      mean: mean,
-      targetRTP: targetRTP,
-      numSimulations: numSimulations,
-      numCorrections: numCorrections,
+      multipliers,
+      mean,
+      targetRTP,
+      numSimulations,
+      numCorrections,
     });
 
     if (betConfigCache) {
@@ -69,12 +69,12 @@ export class BetConfigService {
     standardDeviation = standardDeviation;
 
     const betConfig = await this.betConfigRepository.create({
-      multipliers: multipliers,
-      mean: mean,
-      targetRTP: targetRTP,
-      numSimulations: numSimulations,
-      numCorrections: numCorrections,
-      standardDeviation: standardDeviation,
+      multipliers,
+      mean,
+      targetRTP,
+      numSimulations,
+      numCorrections,
+      standardDeviation,
     });
 
     this.currentConfiguration = betConfig;

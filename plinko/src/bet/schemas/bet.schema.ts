@@ -7,7 +7,7 @@ export class Bet {
   userId: string;
 
   @Prop()
-  bet: number;
+  amount: number;
 
   @Prop()
   multiplier: number;
