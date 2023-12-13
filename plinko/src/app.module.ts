@@ -18,7 +18,12 @@ import { UserRepository } from './auth/repositories/user.repository';
     ConfigModule.forRoot({ isGlobal: true }),
     BetModule,
     AuthModule,
-    MongooseModule.forRoot('mongodb://localhost/plinkoDb'),
+    MongooseModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'),
+      }),
+      inject: [ConfigService],
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
